@@ -1,22 +1,138 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { Sparkles, Gift, Eye, RotateCw } from 'lucide-react';
+import { Sparkles, Gift, RotateCw, UserCheck, Users } from 'lucide-react';
 import { playClickSound } from '../utils/audio';
+
+// Helper: Create circular avatar canvas texture
+function createAvatarTexture(name, avatarUrl) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  function renderPlaceholder() {
+    ctx.clearRect(0, 0, 256, 256);
+    
+    // Gradient festive background
+    const grad = ctx.createLinearGradient(0, 0, 256, 256);
+    grad.addColorStop(0, '#dc2626');
+    grad.addColorStop(1, '#991b1b');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(128, 128, 120, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Golden border
+    ctx.lineWidth = 12;
+    ctx.strokeStyle = '#f59e0b';
+    ctx.stroke();
+
+    // Initial letter
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 100px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText((name || 'U').slice(0, 1).toUpperCase(), 128, 128);
+  }
+
+  renderPlaceholder();
+
+  const texture = new THREE.CanvasTexture(canvas);
+
+  if (avatarUrl) {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      ctx.clearRect(0, 0, 256, 256);
+
+      // Clip circular
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(128, 128, 116, 0, Math.PI * 2);
+      ctx.closePath();
+      ctx.clip();
+
+      ctx.drawImage(img, 12, 12, 232, 232);
+      ctx.restore();
+
+      // Golden ring border
+      ctx.beginPath();
+      ctx.arc(128, 128, 118, 0, Math.PI * 2);
+      ctx.lineWidth = 12;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.stroke();
+
+      texture.needsUpdate = true;
+    };
+    img.onerror = () => {
+      // Keep placeholder on error
+    };
+    img.src = avatarUrl;
+  }
+
+  return texture;
+}
+
+// Helper: Create 3D floating name tag sprite
+function createNameTagSprite(name, isGiven, isSelected) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 384;
+  canvas.height = 112;
+  const ctx = canvas.getContext('2d');
+
+  // Background pill
+  if (isSelected) {
+    ctx.fillStyle = 'rgba(220, 38, 38, 0.95)';
+  } else if (isGiven) {
+    ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
+  } else {
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+  }
+
+  ctx.beginPath();
+  ctx.roundRect(10, 10, 364, 92, 46);
+  ctx.fill();
+
+  // Border
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = isSelected ? '#fbbf24' : isGiven ? '#64748b' : '#38bdf8';
+  ctx.stroke();
+
+  // Name text
+  ctx.font = 'bold 34px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = isSelected ? '#fffbeb' : '#ffffff';
+
+  const shortName = name.length > 11 ? name.slice(0, 10) + '…' : name;
+  const prefix = isSelected ? '★ ' : isGiven ? '✓ ' : '';
+  ctx.fillText(prefix + shortName, 192, 56);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+  const sprite = new THREE.Sprite(spriteMat);
+  sprite.scale.set(1.3, 0.38, 1);
+  return sprite;
+}
 
 export default function ChristmasTree3D({
   items = [],
   onSelectItem,
   disabled = false,
   openedItemIds = [],
+  participants = [],
+  selectedGiver = null,
+  onSelectGiver = null,
 }) {
   const mountRef = useRef(null);
-  const [hoveredItem, setHoveredItem] = useState(null);
+  const [hoveredTarget, setHoveredTarget] = useState(null);
   const [autoRotate, setAutoRotate] = useState(true);
 
-  // References for three.js cleanup and interaction
+  // References for three.js
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
   const interactableMeshes = useRef([]);
+  const characterGroupsRef = useRef([]);
   const starMeshRef = useRef(null);
   const lightsArrayRef = useRef([]);
 
@@ -25,7 +141,7 @@ export default function ChristmasTree3D({
     if (!container) return;
 
     const width = container.clientWidth;
-    const height = container.clientHeight || 560;
+    const height = container.clientHeight || 580;
 
     // SCENE
     const scene = new THREE.Scene();
@@ -33,8 +149,8 @@ export default function ChristmasTree3D({
 
     // CAMERA
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.set(0, 3.5, 9.5);
-    camera.lookAt(0, 2.2, 0);
+    camera.position.set(0, 3.8, 10.5);
+    camera.lookAt(0, 2.0, 0);
 
     // RENDERER
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -46,7 +162,7 @@ export default function ChristmasTree3D({
     container.appendChild(renderer.domElement);
 
     // LIGHTING
-    const ambientLight = new THREE.AmbientLight(0xfff3e0, 1.2);
+    const ambientLight = new THREE.AmbientLight(0xfff3e0, 1.3);
     scene.add(ambientLight);
 
     const dirLight = new THREE.DirectionalLight(0xffffff, 1.8);
@@ -57,36 +173,55 @@ export default function ChristmasTree3D({
     scene.add(dirLight);
 
     // Point lights for magical glow
-    const pointLightGold = new THREE.PointLight(0xf59e0b, 2.5, 12);
+    const pointLightGold = new THREE.PointLight(0xf59e0b, 2.5, 14);
     pointLightGold.position.set(0, 4.5, 1.5);
     scene.add(pointLightGold);
 
-    const pointLightRed = new THREE.PointLight(0xef4444, 2.0, 10);
-    pointLightRed.position.set(-2, 2, 2);
+    const pointLightRed = new THREE.PointLight(0xef4444, 2.0, 12);
+    pointLightRed.position.set(-2.5, 1.5, 2.5);
     scene.add(pointLightRed);
 
-    const pointLightGreen = new THREE.PointLight(0x10b981, 2.0, 10);
-    pointLightGreen.position.set(2, 2, 2);
+    const pointLightGreen = new THREE.PointLight(0x10b981, 2.0, 12);
+    pointLightGreen.position.set(2.5, 1.5, 2.5);
     scene.add(pointLightGreen);
 
-    // TREE GROUP (everything that rotates)
+    // Spotlight pointing at base platform for characters
+    const baseSpotlight = new THREE.SpotLight(0xffedd5, 1.8, 15, Math.PI / 4, 0.5);
+    baseSpotlight.position.set(0, 8, 4);
+    scene.add(baseSpotlight);
+
+    // TREE GROUP (everything that rotates on the carousel)
     const treeGroup = new THREE.Group();
     scene.add(treeGroup);
 
-    // BASE / SNOW PLATFORM
-    const snowPlatformGeo = new THREE.CylinderGeometry(3.6, 3.9, 0.35, 32);
+    // ENLARGED SNOW PLATFORM / CAROUSEL BASE
+    const snowPlatformGeo = new THREE.CylinderGeometry(4.4, 4.7, 0.42, 40);
     const snowPlatformMat = new THREE.MeshStandardMaterial({
       color: 0xecfeff,
       roughness: 0.6,
       metalness: 0.1,
     });
     const snowPlatform = new THREE.Mesh(snowPlatformGeo, snowPlatformMat);
-    snowPlatform.position.y = -0.15;
+    snowPlatform.position.y = -0.21;
     snowPlatform.receiveShadow = true;
     treeGroup.add(snowPlatform);
 
+    // Decorative Gold Rim on Base Platform
+    const baseRimGeo = new THREE.TorusGeometry(4.42, 0.07, 12, 48);
+    const baseRimMat = new THREE.MeshStandardMaterial({
+      color: 0xf59e0b,
+      metalness: 0.8,
+      roughness: 0.2,
+      emissive: 0xd97706,
+      emissiveIntensity: 0.25,
+    });
+    const baseRim = new THREE.Mesh(baseRimGeo, baseRimMat);
+    baseRim.rotation.x = Math.PI / 2;
+    baseRim.position.y = 0.01;
+    treeGroup.add(baseRim);
+
     // TREE TRUNK
-    const trunkGeo = new THREE.CylinderGeometry(0.35, 0.45, 1.2, 16);
+    const trunkGeo = new THREE.CylinderGeometry(0.35, 0.48, 1.2, 16);
     const trunkMat = new THREE.MeshStandardMaterial({
       color: 0x5c2c16,
       roughness: 0.9,
@@ -119,7 +254,7 @@ export default function ChristmasTree3D({
       cone.receiveShadow = true;
       treeGroup.add(cone);
 
-      // Snow frosting on the edges
+      // Snow rim
       const snowRimGeo = new THREE.TorusGeometry(tier.radius * 0.96, 0.06, 8, 24);
       const snowRimMat = new THREE.MeshStandardMaterial({
         color: 0xffffff,
@@ -131,7 +266,7 @@ export default function ChristmasTree3D({
       treeGroup.add(snowRim);
     });
 
-    // TOP STAR (Spangles & glowing golden star)
+    // TOP STAR
     const starShape = new THREE.Shape();
     const starPoints = 5;
     const outerR = 0.42;
@@ -167,10 +302,10 @@ export default function ChristmasTree3D({
     const lightSpheres = [];
 
     for (let i = 0; i < lightsCount; i++) {
-      const progress = i / lightsCount; // 0 to 1
+      const progress = i / lightsCount;
       const y = 0.8 + progress * 3.8;
       const radiusAtY = (1 - progress * 0.75) * 2.1;
-      const angle = progress * Math.PI * 14; // 7 full loops
+      const angle = progress * Math.PI * 14;
 
       const x = Math.cos(angle) * (radiusAtY + 0.1);
       const z = Math.sin(angle) * (radiusAtY + 0.1);
@@ -191,14 +326,16 @@ export default function ChristmasTree3D({
     treeGroup.add(lightsGroup);
     lightsArrayRef.current = lightSpheres;
 
-    // INTERACTABLE ORNAMENTS & GIFTS
-    const meshes = [];
+    // ALL INTERACTABLE MESHES FOR RAYCASTING
+    const interactables = [];
+
+    // ==========================================
+    // 1. INTERACTABLE ORNAMENTS & GIFTS ON TREE
+    // ==========================================
     const itemCount = items.length;
 
     items.forEach((item, index) => {
       const isAlreadyOpened = openedItemIds.includes(item.id);
-
-      // Distribute items in spirals & under the tree
       const angle = (index / itemCount) * Math.PI * 2 + (index % 2) * 0.4;
       const tierProgress = 0.15 + (index / itemCount) * 0.7;
       const y = 0.7 + tierProgress * 3.2;
@@ -212,7 +349,6 @@ export default function ChristmasTree3D({
       let mainMesh;
 
       if (item.type.includes('gift')) {
-        // 3D Gift Box with Ribbon
         const boxGeo = new THREE.BoxGeometry(0.32, 0.32, 0.32);
         const boxMat = new THREE.MeshStandardMaterial({
           color: new THREE.Color(item.color || '#e11d48'),
@@ -224,7 +360,6 @@ export default function ChristmasTree3D({
         mainMesh = new THREE.Mesh(boxGeo, boxMat);
         mainMesh.castShadow = true;
 
-        // Ribbon
         const ribGeo = new THREE.BoxGeometry(0.33, 0.33, 0.08);
         const ribMat = new THREE.MeshStandardMaterial({
           color: 0xffd700,
@@ -239,7 +374,6 @@ export default function ChristmasTree3D({
         mainMesh.add(ribbon1);
         mainMesh.add(ribbon2);
       } else if (item.type.includes('candy')) {
-        // Candy Cane
         const caneGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.45, 12);
         const caneMat = new THREE.MeshStandardMaterial({
           color: 0xef4444,
@@ -250,7 +384,6 @@ export default function ChristmasTree3D({
         mainMesh = new THREE.Mesh(caneGeo, caneMat);
         mainMesh.rotation.z = Math.PI / 4;
       } else if (item.type.includes('bell')) {
-        // Golden Bell
         const bellGeo = new THREE.ConeGeometry(0.18, 0.3, 16);
         const bellMat = new THREE.MeshStandardMaterial({
           color: 0xf59e0b,
@@ -263,7 +396,6 @@ export default function ChristmasTree3D({
         });
         mainMesh = new THREE.Mesh(bellGeo, bellMat);
       } else {
-        // Shiny Bauble
         const baubleGeo = new THREE.SphereGeometry(0.2, 24, 24);
         const baubleMat = new THREE.MeshStandardMaterial({
           color: new THREE.Color(item.color || '#dc2626'),
@@ -277,7 +409,6 @@ export default function ChristmasTree3D({
         mainMesh = new THREE.Mesh(baubleGeo, baubleMat);
         mainMesh.castShadow = true;
 
-        // Bauble cap
         const capGeo = new THREE.CylinderGeometry(0.05, 0.06, 0.06, 12);
         const capMat = new THREE.MeshStandardMaterial({ color: 0xffd700, metalness: 0.9 });
         const cap = new THREE.Mesh(capGeo, capMat);
@@ -285,21 +416,213 @@ export default function ChristmasTree3D({
         mainMesh.add(cap);
       }
 
-      // Metadata on the mesh
       mainMesh.userData = {
+        kind: 'treeItem',
         item,
         originalScale: new THREE.Vector3(1, 1, 1),
         isOpened: isAlreadyOpened,
+        group: ornamentGroup,
       };
 
       ornamentGroup.add(mainMesh);
       treeGroup.add(ornamentGroup);
-      meshes.push(mainMesh);
+      interactables.push(mainMesh);
     });
 
-    interactableMeshes.current = meshes;
+    // ==========================================
+    // 2. 3D MINI CHARACTERS ON SNOW CAROUSEL
+    // ==========================================
+    const charGroups = [];
+    const participantCount = participants.length;
+    const baseRadius = 3.65; // Position on snow platform
 
-    // DRAG TO ROTATE CONTROLS
+    participants.forEach((p, idx) => {
+      const isSelected = selectedGiver?.id === p.id;
+      const isGiven = p.hasGiven;
+
+      const angle = (idx / Math.max(participantCount, 1)) * Math.PI * 2;
+      const x = Math.cos(angle) * baseRadius;
+      const z = Math.sin(angle) * baseRadius;
+
+      const charGroup = new THREE.Group();
+      charGroup.position.set(x, 0.01, z);
+      
+      // Face towards outside or tangent
+      charGroup.rotation.y = -angle + Math.PI / 2;
+
+      // Base Halo Ring for Selected Giver
+      if (isSelected) {
+        const haloGeo = new THREE.RingGeometry(0.35, 0.48, 24);
+        const haloMat = new THREE.MeshBasicMaterial({
+          color: 0xfbbf24,
+          side: THREE.DoubleSide,
+        });
+        const halo = new THREE.Mesh(haloGeo, haloMat);
+        halo.rotation.x = -Math.PI / 2;
+        halo.position.y = 0.02;
+        charGroup.add(halo);
+      }
+
+      // --- Body (Red Santa Coat) ---
+      const bodyGeo = new THREE.CylinderGeometry(0.18, 0.25, 0.44, 16);
+      const bodyMat = new THREE.MeshStandardMaterial({
+        color: isSelected ? 0xdc2626 : isGiven ? 0x64748b : 0xb91c1c,
+        roughness: 0.6,
+      });
+      const body = new THREE.Mesh(bodyGeo, bodyMat);
+      body.position.y = 0.22;
+      body.castShadow = true;
+      charGroup.add(body);
+
+      // White fur trim at bottom of coat
+      const furTrimGeo = new THREE.TorusGeometry(0.24, 0.035, 8, 16);
+      const furTrimMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+      const furTrim = new THREE.Mesh(furTrimGeo, furTrimMat);
+      furTrim.rotation.x = Math.PI / 2;
+      furTrim.position.y = 0.04;
+      charGroup.add(furTrim);
+
+      // Black belt & Gold buckle
+      const beltGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.06, 16);
+      const beltMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4 });
+      const belt = new THREE.Mesh(beltGeo, beltMat);
+      belt.position.y = 0.2;
+      charGroup.add(belt);
+
+      const buckleGeo = new THREE.BoxGeometry(0.08, 0.08, 0.02);
+      const buckleMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.8 });
+      const buckle = new THREE.Mesh(buckleGeo, buckleMat);
+      buckle.position.set(0, 0.2, 0.22);
+      charGroup.add(buckle);
+
+      // Two cute little boots
+      const bootGeo = new THREE.BoxGeometry(0.09, 0.08, 0.14);
+      const bootMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3 });
+      const leftBoot = new THREE.Mesh(bootGeo, bootMat);
+      leftBoot.position.set(-0.09, 0.04, 0.02);
+      const rightBoot = leftBoot.clone();
+      rightBoot.position.set(0.09, 0.04, 0.02);
+      charGroup.add(leftBoot);
+      charGroup.add(rightBoot);
+
+      // Arms
+      const armGeo = new THREE.CylinderGeometry(0.045, 0.05, 0.26, 8);
+      const armMat = new THREE.MeshStandardMaterial({ color: 0xdc2626 });
+      const leftArm = new THREE.Mesh(armGeo, armMat);
+      leftArm.position.set(-0.25, 0.28, 0);
+      leftArm.rotation.z = Math.PI / 5;
+      const rightArm = new THREE.Mesh(armGeo, armMat);
+      rightArm.position.set(0.25, 0.28, 0);
+      rightArm.rotation.z = -Math.PI / 5;
+      charGroup.add(leftArm);
+      charGroup.add(rightArm);
+
+      // If already given, holds a cute mini gift box!
+      if (isGiven) {
+        const miniGiftGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+        const miniGiftMat = new THREE.MeshStandardMaterial({ color: 0x10b981 });
+        const miniGift = new THREE.Mesh(miniGiftGeo, miniGiftMat);
+        miniGift.position.set(0.2, 0.2, 0.16);
+        charGroup.add(miniGift);
+      }
+
+      // --- Head (Spherical Chibi Head + Front Avatar Disc) ---
+      const headGroup = new THREE.Group();
+      headGroup.position.y = 0.58;
+      charGroup.add(headGroup);
+
+      // Cute round head base
+      const headSphereGeo = new THREE.SphereGeometry(0.23, 20, 20);
+      const headSphereMat = new THREE.MeshStandardMaterial({
+        color: 0xfed7aa,
+        roughness: 0.7,
+      });
+      const headSphere = new THREE.Mesh(headSphereGeo, headSphereMat);
+      headSphere.castShadow = true;
+      headGroup.add(headSphere);
+
+      // FRONT FACE AVATAR BADGE (Round disc facing front)
+      const avatarTexture = createAvatarTexture(p.name, p.avatar);
+      const avatarDiscGeo = new THREE.CircleGeometry(0.2, 32);
+      const avatarDiscMat = new THREE.MeshBasicMaterial({
+        map: avatarTexture,
+        side: THREE.FrontSide,
+        transparent: true,
+      });
+      const avatarDisc = new THREE.Mesh(avatarDiscGeo, avatarDiscMat);
+      avatarDisc.position.set(0, 0, 0.17); // Slightly protruding forward on face
+      headGroup.add(avatarDisc);
+
+      // Gold frame around avatar
+      const avatarFrameGeo = new THREE.TorusGeometry(0.2, 0.02, 8, 32);
+      const avatarFrameMat = new THREE.MeshStandardMaterial({
+        color: isSelected ? 0xfbbf24 : 0xeab308,
+        metalness: 0.8,
+        roughness: 0.2,
+      });
+      const avatarFrame = new THREE.Mesh(avatarFrameGeo, avatarFrameMat);
+      avatarFrame.position.set(0, 0, 0.168);
+      headGroup.add(avatarFrame);
+
+      // --- Santa Hat on Head ---
+      const hatGroup = new THREE.Group();
+      hatGroup.position.set(0, 0.18, 0);
+      hatGroup.rotation.z = -0.22; // cute tilt
+      headGroup.add(hatGroup);
+
+      // Hat white brim
+      const hatBrimGeo = new THREE.TorusGeometry(0.21, 0.045, 8, 20);
+      const hatBrimMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+      const hatBrim = new THREE.Mesh(hatBrimGeo, hatBrimMat);
+      hatBrim.rotation.x = Math.PI / 2;
+      hatGroup.add(hatBrim);
+
+      // Hat red cone
+      const hatConeGeo = new THREE.ConeGeometry(0.2, 0.35, 16);
+      const hatConeMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.5 });
+      const hatCone = new THREE.Mesh(hatConeGeo, hatConeMat);
+      hatCone.position.y = 0.16;
+      hatGroup.add(hatCone);
+
+      // Hat white pom-pom ball
+      const pomGeo = new THREE.SphereGeometry(0.06, 12, 12);
+      const pomMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
+      const pom = new THREE.Mesh(pomGeo, pomMat);
+      pom.position.set(0.04, 0.34, 0);
+      hatGroup.add(pom);
+
+      // --- Floating 3D Name Tag Sprite ---
+      const nameTagSprite = createNameTagSprite(p.name, isGiven, isSelected);
+      nameTagSprite.position.set(0, 1.18, 0);
+      charGroup.add(nameTagSprite);
+
+      // Metadata for Raycasting & Click on the entire character
+      const hitBoxGeo = new THREE.CylinderGeometry(0.38, 0.38, 1.25, 12);
+      const hitBoxMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 });
+      const hitBox = new THREE.Mesh(hitBoxGeo, hitBoxMat);
+      hitBox.position.y = 0.6;
+      hitBox.userData = {
+        kind: 'character',
+        participant: p,
+        group: charGroup,
+        headGroup,
+        isSelected,
+        isGiven,
+        originalY: 0.01,
+      };
+      charGroup.add(hitBox);
+      interactables.push(hitBox);
+
+      treeGroup.add(charGroup);
+      charGroups.push({ group: charGroup, hitBox, participant: p, isSelected, isGiven, index: idx });
+    });
+
+    characterGroupsRef.current = charGroups;
+    interactableMeshes.current = interactables;
+
+    // ==========================================
+    // INTERACTION: MOUSE & TOUCH EVENTS
+    // ==========================================
     let isDragging = false;
     let previousMouseX = 0;
     let rotationVelocity = 0;
@@ -310,7 +633,6 @@ export default function ChristmasTree3D({
     };
 
     const handleMouseMove = (e) => {
-      // Raycasting for hover
       const rect = renderer.domElement.getBoundingClientRect();
       const mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const mouseY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -322,26 +644,42 @@ export default function ChristmasTree3D({
 
       if (intersects.length > 0) {
         let hit = intersects[0].object;
-        while (hit && !hit.userData?.item && hit.parent) {
+        while (hit && !hit.userData?.kind && hit.parent) {
           hit = hit.parent;
         }
 
-        if (hit && hit.userData?.item) {
-          container.style.cursor = disabled || hit.userData.isOpened ? 'not-allowed' : 'pointer';
-          setHoveredItem(hit.userData.item);
+        if (hit && hit.userData?.kind) {
+          const kind = hit.userData.kind;
 
-          // Pop effect
-          if (!hit.userData.isOpened) {
-            hit.scale.set(1.25, 1.25, 1.25);
+          if (kind === 'character') {
+            const p = hit.userData.participant;
+            container.style.cursor = p.hasGiven ? 'not-allowed' : 'pointer';
+            setHoveredTarget({ kind: 'character', participant: p });
+
+            // Pop scale on character group
+            if (hit.userData.group) {
+              hit.userData.group.scale.set(1.18, 1.18, 1.18);
+            }
+          } else if (kind === 'treeItem') {
+            container.style.cursor = disabled || hit.userData.isOpened ? 'not-allowed' : 'pointer';
+            setHoveredTarget({ kind: 'treeItem', item: hit.userData.item, isOpened: hit.userData.isOpened });
+
+            if (!hit.userData.isOpened) {
+              hit.scale.set(1.25, 1.25, 1.25);
+            }
           }
         }
       } else {
         container.style.cursor = isDragging ? 'grabbing' : 'grab';
-        setHoveredItem(null);
+        setHoveredTarget(null);
 
         // Reset scales
         interactableMeshes.current.forEach((m) => {
-          m.scale.set(1, 1, 1);
+          if (m.userData.kind === 'treeItem') {
+            m.scale.set(1, 1, 1);
+          } else if (m.userData.kind === 'character' && m.userData.group) {
+            m.userData.group.scale.set(1, 1, 1);
+          }
         });
       }
 
@@ -358,7 +696,6 @@ export default function ChristmasTree3D({
     };
 
     const handleClick = (e) => {
-      if (disabled) return;
       const rect = renderer.domElement.getBoundingClientRect();
       const mouseX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const mouseY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -370,17 +707,34 @@ export default function ChristmasTree3D({
 
       if (intersects.length > 0) {
         let hit = intersects[0].object;
-        while (hit && !hit.userData?.item && hit.parent) {
+        while (hit && !hit.userData?.kind && hit.parent) {
           hit = hit.parent;
         }
 
-        if (hit && hit.userData?.item) {
-          const item = hit.userData.item;
-          if (hit.userData.isOpened) return;
+        if (hit && hit.userData?.kind) {
+          const kind = hit.userData.kind;
 
-          playClickSound();
-          if (onSelectItem) {
-            onSelectItem(item);
+          if (kind === 'character') {
+            // Clicked 3D Mini Character!
+            const p = hit.userData.participant;
+            if (p.hasGiven) {
+              return;
+            }
+
+            playClickSound();
+            if (onSelectGiver) {
+              onSelectGiver(p);
+            }
+          } else if (kind === 'treeItem') {
+            // Clicked Ornament / Gift on Tree!
+            if (disabled) return;
+            const item = hit.userData.item;
+            if (hit.userData.isOpened) return;
+
+            playClickSound();
+            if (onSelectItem) {
+              onSelectItem(item);
+            }
           }
         }
       }
@@ -417,7 +771,9 @@ export default function ChristmasTree3D({
     dom.addEventListener('touchmove', handleTouchMove);
     dom.addEventListener('touchend', handleTouchEnd);
 
+    // ==========================================
     // ANIMATION LOOP
+    // ==========================================
     let clock = new THREE.Clock();
     let animId;
 
@@ -440,11 +796,25 @@ export default function ChristmasTree3D({
         });
       }
 
-      // Tree gentle idle spin if autoRotate is enabled and not dragging
+      // Character animations (Idle bobbing & bouncing when selected)
+      if (characterGroupsRef.current) {
+        characterGroupsRef.current.forEach((cg) => {
+          if (cg.isSelected) {
+            // Energetic celebratory jumping for current giver!
+            const jump = Math.abs(Math.sin(elapsedTime * 6)) * 0.15;
+            cg.group.position.y = 0.01 + jump;
+          } else {
+            // Gentle festive idle sway
+            const idle = Math.sin(elapsedTime * 2.5 + cg.index) * 0.02;
+            cg.group.position.y = 0.01 + idle;
+          }
+        });
+      }
+
+      // Carousel spin
       if (autoRotate && !isDragging) {
         treeGroup.rotation.y += 0.003;
       } else if (!isDragging && Math.abs(rotationVelocity) > 0.0001) {
-        // Inertia damping
         treeGroup.rotation.y += rotationVelocity;
         rotationVelocity *= 0.94;
       }
@@ -458,7 +828,7 @@ export default function ChristmasTree3D({
     const handleResize = () => {
       if (!container) return;
       const w = container.clientWidth;
-      const h = container.clientHeight || 560;
+      const h = container.clientHeight || 580;
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
@@ -481,24 +851,24 @@ export default function ChristmasTree3D({
       }
       renderer.dispose();
     };
-  }, [items, openedItemIds, disabled, autoRotate, onSelectItem]);
+  }, [items, openedItemIds, disabled, autoRotate, participants, selectedGiver, onSelectItem, onSelectGiver]);
 
   return (
-    <div className="relative w-full h-[520px] md:h-[600px] rounded-3xl overflow-hidden glass-panel border border-amber-500/20 shadow-2xl flex flex-col items-center justify-center">
+    <div className="relative w-full h-[540px] md:h-[620px] rounded-3xl overflow-hidden glass-panel border border-amber-500/20 shadow-2xl flex flex-col items-center justify-center">
       {/* Three.js canvas container */}
       <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing" />
 
       {/* Top Floating Controls */}
       <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none z-10">
-        <div className="flex items-center gap-2 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-amber-400/30 text-xs text-amber-200">
+        <div className="flex items-center gap-2 bg-slate-900/85 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-amber-400/30 text-xs text-amber-200 shadow-md">
           <Sparkles className="w-4 h-4 text-amber-400 animate-spin" style={{ animationDuration: '4s' }} />
-          <span>Xoay cây 360° để ngắm các món quà!</span>
+          <span>Xoay 360° • Click nhân vật 3D mini hoặc avatar để chọn người!</span>
         </div>
 
         <button
           type="button"
           onClick={() => setAutoRotate(!autoRotate)}
-          className="pointer-events-auto flex items-center gap-1.5 bg-slate-900/80 hover:bg-slate-800 text-xs text-slate-200 px-3 py-1.5 rounded-full border border-white/20 transition-all hover:border-amber-400"
+          className="pointer-events-auto flex items-center gap-1.5 bg-slate-900/85 hover:bg-slate-800 text-xs text-slate-200 px-3 py-1.5 rounded-full border border-white/20 transition-all hover:border-amber-400 shadow-md"
           title="Bật/Tắt tự động xoay"
         >
           <RotateCw className={`w-3.5 h-3.5 ${autoRotate ? 'text-emerald-400 animate-spin' : 'text-slate-400'}`} style={{ animationDuration: '6s' }} />
@@ -506,33 +876,58 @@ export default function ChristmasTree3D({
         </button>
       </div>
 
-      {/* Floating Hover Card */}
-      {hoveredItem && (
+      {/* Floating Hover Card for Character or Tree Ornament */}
+      {hoveredTarget && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 pointer-events-none z-20 transition-all transform animate-bounce">
-          <div className="bg-slate-900/95 backdrop-blur-xl border-2 border-amber-400 text-white px-5 py-2.5 rounded-2xl shadow-[0_0_25px_rgba(245,158,11,0.5)] flex items-center gap-3">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center shadow-inner"
-              style={{ backgroundColor: hoveredItem.color || '#ef4444' }}
-            >
-              <Gift className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <div className="text-xs font-semibold text-amber-400 flex items-center gap-1">
-                <span>Mã Bí Mật: {hoveredItem.code}</span>
-                <span className="text-[10px] bg-red-600/60 px-1.5 py-0.5 rounded text-white">{hoveredItem.score}</span>
+          {hoveredTarget.kind === 'character' ? (
+            <div className="bg-slate-900/95 backdrop-blur-xl border-2 border-amber-400 text-white px-5 py-2.5 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.5)] flex items-center gap-3">
+              <img
+                src={hoveredTarget.participant.avatar}
+                alt={hoveredTarget.participant.name}
+                className="w-10 h-10 rounded-full object-cover border-2 border-amber-400 shadow-inner"
+              />
+              <div>
+                <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>Nhân vật 3D Mini: {hoveredTarget.participant.name}</span>
+                </div>
+                <div className="text-xs font-medium text-slate-200">
+                  {hoveredTarget.participant.hasGiven ? (
+                    <span className="text-emerald-400 font-semibold">✓ Đã hoàn thành trao quà</span>
+                  ) : hoveredTarget.participant.id === selectedGiver?.id ? (
+                    <span className="text-amber-400 font-bold">★ Đang trên sân khấu chọn quà!</span>
+                  ) : (
+                    <span className="text-white font-bold">👉 Nhấn vào nhân vật này để chọn người tặng quà!</span>
+                  )}
+                </div>
               </div>
-              <div className="text-sm font-bold text-white tracking-wide">
-                {openedItemIds.includes(hoveredItem.id) ? 'Đã được mở trước đó' : '✨ Nhấn để mở món quà này!'}
+            </div>
+          ) : (
+            <div className="bg-slate-900/95 backdrop-blur-xl border-2 border-amber-400 text-white px-5 py-2.5 rounded-2xl shadow-[0_0_25px_rgba(245,158,11,0.5)] flex items-center gap-3">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center shadow-inner"
+                style={{ backgroundColor: hoveredTarget.item.color || '#ef4444' }}
+              >
+                <Gift className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <div className="text-xs font-semibold text-amber-400 flex items-center gap-1">
+                  <span>Mã Bí Mật: {hoveredTarget.item.code}</span>
+                  <span className="text-[10px] bg-red-600/60 px-1.5 py-0.5 rounded text-white">{hoveredTarget.item.score}</span>
+                </div>
+                <div className="text-sm font-bold text-white tracking-wide">
+                  {hoveredTarget.isOpened ? 'Đã được mở trước đó' : '✨ Nhấn để mở món quà này!'}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       )}
 
       {/* Bottom Accessible Tray (Click to select alternative) */}
       <div className="absolute bottom-3 left-4 right-4 flex items-center justify-center gap-2 overflow-x-auto py-1 px-2 z-10 pointer-events-auto">
         <span className="text-[11px] text-slate-400 hidden sm:inline whitespace-nowrap bg-black/40 px-2 py-1 rounded">
-          Chọn nhanh:
+          Chọn nhanh quà:
         </span>
         <div className="flex gap-1.5 overflow-x-auto max-w-full pb-1">
           {items.map((item) => {

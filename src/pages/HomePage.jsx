@@ -14,7 +14,7 @@ export default function HomePage({ onStartGame, onGoManage, participants = [] })
         {/* Festive Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-950/60 border border-amber-400/40 text-amber-300 text-xs sm:text-sm font-bold uppercase tracking-widest mb-6 shadow-[0_0_20px_rgba(239,68,68,0.4)]">
           <Sparkles className="w-4 h-4 text-amber-400 animate-spin" style={{ animationDuration: '4s' }} />
-          <span>Mùa Giáng Sinh Yêu Thương • Team Building Party</span>
+          <span>Đổi quà giáng sinh • Chrismast Party</span>
           <span className="text-xl">🎅</span>
         </div>
 

@@ -138,7 +138,7 @@ export default function App() {
             <span>Merry Christmas & Happy New Year • <strong>Secret Santa Exchange</strong></span>
           </div>
           <div>
-            Hỗ trợ quản lý file Excel (.xlsx) • Cây Thông Noel 3D • Đổi quà kịch tính 30s
+            {/* Hỗ trợ quản lý file Excel (.xlsx) • Cây Thông Noel 3D • Đổi quà kịch tính 30s */}
           </div>
         </div>
       </footer>

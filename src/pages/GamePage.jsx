@@ -304,7 +304,7 @@ export default function GamePage({
           </div>
         ) : (
           <div className="mb-3 p-3 rounded-2xl bg-slate-900/70 border border-amber-400/20 text-center text-xs text-amber-200">
-            👆 Bước 1: Hãy nhấn vào avatar của bạn ở danh sách phía trên để bắt đầu lượt chơi!
+            👆 Bước 1: Hãy nhấn vào <strong>Avatar của bạn</strong> ở hàng trên HOẶC nhấn trực tiếp vào <strong>Nhân vật 3D mini</strong> của bạn trên bàn xoay cây thông!
           </div>
         )}
 
@@ -314,6 +314,9 @@ export default function GamePage({
           openedItemIds={openedItemIds}
           disabled={!selectedGiver}
           onSelectItem={handleSelectTreeItem}
+          participants={participants}
+          selectedGiver={selectedGiver}
+          onSelectGiver={handleSelectGiver}
         />
       </div>
 
