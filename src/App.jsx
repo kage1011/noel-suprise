@@ -12,6 +12,7 @@ const LOCAL_STORAGE_KEY_HISTORY = 'noel_exchange_history_v1';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
+  const [storageErrors, setStorageErrors] = useState({ participants: false, history: false });
 
   // Load participants from localStorage or default
   const [participants, setParticipants] = useState(() => {
@@ -42,16 +43,20 @@ export default function App() {
   useEffect(() => {
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY_PARTICIPANTS, JSON.stringify(participants));
+      setStorageErrors((errors) => ({ ...errors, participants: false }));
     } catch (e) {
       console.error('Error saving participants:', e);
+      setStorageErrors((errors) => ({ ...errors, participants: true }));
     }
   }, [participants]);
 
   useEffect(() => {
     try {
       localStorage.setItem(LOCAL_STORAGE_KEY_HISTORY, JSON.stringify(history));
+      setStorageErrors((errors) => ({ ...errors, history: false }));
     } catch (e) {
       console.error('Error saving history:', e);
+      setStorageErrors((errors) => ({ ...errors, history: true }));
     }
   }, [history]);
 
@@ -80,6 +85,16 @@ export default function App() {
 
   return (
     <div className="relative min-h-screen flex flex-col justify-between overflow-x-hidden">
+      {(storageErrors.participants || storageErrors.history) && (
+        <div
+          role="alert"
+          className="relative z-50 bg-red-950 px-4 py-3 text-center text-sm text-red-100"
+        >
+          Không thể lưu {storageErrors.participants ? 'danh sách thành viên' : 'lịch sử'} vào bộ nhớ trình duyệt (có thể đã đầy hoặc bị chặn).
+          Dữ liệu mới có thể mất khi tải lại trang. Hãy xuất kết quả Excel để sao lưu và giảm dung lượng ảnh đại diện.
+        </div>
+      )}
+
       {/* Falling Snow Effect */}
       <SnowEffect count={85} />
 

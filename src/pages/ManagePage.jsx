@@ -16,6 +16,42 @@ import { parseExcelFile, exportSampleTemplate, exportResultsToExcel } from '../u
 import { AVATAR_PRESETS } from '../data/mockData';
 import { playClickSound } from '../utils/audio';
 
+function optimizeAvatarImage(file) {
+  return new Promise((resolve, reject) => {
+    const imageUrl = URL.createObjectURL(file);
+    const image = new Image();
+
+    image.onload = () => {
+      try {
+        const maxDimension = 320;
+        const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+
+        const context = canvas.getContext('2d');
+        if (!context) {
+          throw new Error('Trình duyệt không hỗ trợ xử lý ảnh.');
+        }
+
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/webp', 0.8));
+      } catch (error) {
+        reject(error);
+      } finally {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
+
+    image.onerror = () => {
+      URL.revokeObjectURL(imageUrl);
+      reject(new Error('Không thể đọc ảnh đã chọn.'));
+    };
+
+    image.src = imageUrl;
+  });
+}
+
 export default function ManagePage({
   participants = [],
   onUpdateParticipants,
@@ -124,15 +160,18 @@ export default function ManagePage({
   };
 
   // Handle local avatar file upload (convert to Base64)
-  const handleAvatarFileUpload = (e) => {
+  const handleAvatarFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setFormAvatar(event.target.result);
-    };
-    reader.readAsDataURL(file);
+    try {
+      setFormAvatar(await optimizeAvatarImage(file));
+    } catch (err) {
+      setUploadStatus({
+        type: 'error',
+        message: `Không thể xử lý ảnh: ${err.message}`,
+      });
+    }
   };
 
   return (
