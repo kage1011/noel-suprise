@@ -51,7 +51,7 @@
 ### Khởi chạy:
 ```bash
 # 1. Di chuyển vào thư mục dự án
-cd d:\Code\noel-suprise
+cd noel-suprise
 
 # 2. Chạy môi trường phát triển (Dev server)
 npm run dev
@@ -99,3 +99,5 @@ noel-suprise/
 ├── vite.config.js
 └── package.json
 ```
+## 📂 Link demo
+https://noel-suprise.onrender.com

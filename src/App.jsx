@@ -152,8 +152,48 @@ export default function App() {
             <span className="text-xl">🎅</span>
             <span>Merry Christmas & Happy New Year • <strong>Secret Santa Exchange</strong></span>
           </div>
-          <div>
-            {/* Hỗ trợ quản lý file Excel (.xlsx) • Cây Thông Noel 3D • Đổi quà kịch tính 30s */}
+          <div className="flex items-center justify-end gap-4">
+            <a
+              href="https://github.com/kage1011"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="GitHub"
+              className="transition-colors hover:text-amber-300"
+            >
+              <i aria-hidden="true">
+                <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
+                  <path d="M12 .5a12 12 0 0 0-3.79 23.39c.6.11.82-.26.82-.58v-2.05c-3.34.73-4.04-1.42-4.04-1.42-.55-1.39-1.33-1.76-1.33-1.76-1.09-.75.08-.74.08-.74 1.2.08 1.83 1.23 1.83 1.23 1.07 1.83 2.8 1.3 3.49.99.11-.78.42-1.3.76-1.6-2.67-.3-5.47-1.34-5.47-5.95 0-1.31.47-2.38 1.23-3.22-.12-.3-.53-1.52.12-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.3-1.55 3.3-1.23 3.3-1.23.65 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.62-2.8 5.64-5.48 5.94.43.37.81 1.1.81 2.22v3.29c0 .32.22.69.83.57A12 12 0 0 0 12 .5Z" />
+                </svg>
+              </i>
+            </a>
+            <a
+              href="https://www.facebook.com/devan1n"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Facebook"
+              className="transition-colors hover:text-amber-300"
+            >
+              <i aria-hidden="true">
+                <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
+                  <path d="M13.5 8H16V5h-2.5C10.7 5 9 6.7 9 9.5V12H6v3h3v7h3v-7h3l.5-3H12V9.5c0-1 .4-1.5 1.5-1.5Z" />
+                </svg>
+              </i>
+            </a>
+            <a
+              href="https://www.instagram.com/zan.khaiii"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Instagram"
+              className="transition-colors hover:text-amber-300"
+            >
+              <i aria-hidden="true">
+                <svg viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current stroke-2">
+                  <rect x="3" y="3" width="18" height="18" rx="5" />
+                  <circle cx="12" cy="12" r="4" />
+                  <circle cx="17.5" cy="6.5" r="1" className="fill-current stroke-none" />
+                </svg>
+              </i>
+            </a>
           </div>
         </div>
       </footer>
