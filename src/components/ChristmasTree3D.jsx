@@ -15,7 +15,7 @@ function createAvatarTexture(name, avatarUrl) {
     
     // Gradient festive background
     const grad = ctx.createLinearGradient(0, 0, 256, 256);
-    grad.addColorStop(0, '#dc2626');
+    grad.addColorStop(0, '#ef4444');
     grad.addColorStop(1, '#991b1b');
     ctx.fillStyle = grad;
     ctx.beginPath();
@@ -24,12 +24,12 @@ function createAvatarTexture(name, avatarUrl) {
 
     // Golden border
     ctx.lineWidth = 12;
-    ctx.strokeStyle = '#f59e0b';
+    ctx.strokeStyle = '#fbbf24';
     ctx.stroke();
 
     // Initial letter
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 100px sans-serif';
+    ctx.font = 'bold 110px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText((name || 'U').slice(0, 1).toUpperCase(), 128, 128);
@@ -38,6 +38,7 @@ function createAvatarTexture(name, avatarUrl) {
   renderPlaceholder();
 
   const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
 
   if (avatarUrl) {
     const img = new Image();
@@ -59,13 +60,15 @@ function createAvatarTexture(name, avatarUrl) {
       ctx.beginPath();
       ctx.arc(128, 128, 118, 0, Math.PI * 2);
       ctx.lineWidth = 12;
-      ctx.strokeStyle = '#f59e0b';
+      ctx.strokeStyle = '#fbbf24';
       ctx.stroke();
 
       texture.needsUpdate = true;
     };
     img.onerror = () => {
-      // Keep placeholder on error
+      // Keep placeholder if load fails (CORS or network error)
+      renderPlaceholder();
+      texture.needsUpdate = true;
     };
     img.src = avatarUrl;
   }
@@ -447,7 +450,8 @@ export default function ChristmasTree3D({
       const charGroup = new THREE.Group();
       charGroup.position.set(x, 0.01, z);
       
-      // Face towards outside or tangent
+      // Face towards outside of carousel (facing viewer when rotated to front)
+      // Since x = cos(angle)*R and z = sin(angle)*R, outward direction is angle, so facing outwards means rotation.y = -angle + Math.PI / 2
       charGroup.rotation.y = -angle + Math.PI / 2;
 
       // Base Halo Ring for Selected Giver
@@ -541,27 +545,29 @@ export default function ChristmasTree3D({
       headSphere.castShadow = true;
       headGroup.add(headSphere);
 
-      // FRONT FACE AVATAR BADGE (Round disc facing front)
+      // FRONT FACE AVATAR BADGE (Round disc clearly visible on the front of head)
       const avatarTexture = createAvatarTexture(p.name, p.avatar);
-      const avatarDiscGeo = new THREE.CircleGeometry(0.2, 32);
+      const avatarDiscGeo = new THREE.CircleGeometry(0.18, 32);
       const avatarDiscMat = new THREE.MeshBasicMaterial({
         map: avatarTexture,
-        side: THREE.FrontSide,
-        transparent: true,
+        side: THREE.DoubleSide,
+        depthTest: true,
       });
       const avatarDisc = new THREE.Mesh(avatarDiscGeo, avatarDiscMat);
-      avatarDisc.position.set(0, 0, 0.17); // Slightly protruding forward on face
+      avatarDisc.position.set(0, 0, 0.235); // Placed safely in front of the sphere (radius 0.23)
+      avatarDisc.renderOrder = 2;
       headGroup.add(avatarDisc);
 
       // Gold frame around avatar
-      const avatarFrameGeo = new THREE.TorusGeometry(0.2, 0.02, 8, 32);
+      const avatarFrameGeo = new THREE.TorusGeometry(0.18, 0.02, 12, 32);
       const avatarFrameMat = new THREE.MeshStandardMaterial({
         color: isSelected ? 0xfbbf24 : 0xeab308,
         metalness: 0.8,
         roughness: 0.2,
       });
       const avatarFrame = new THREE.Mesh(avatarFrameGeo, avatarFrameMat);
-      avatarFrame.position.set(0, 0, 0.168);
+      avatarFrame.position.set(0, 0, 0.236);
+      avatarFrame.renderOrder = 3;
       headGroup.add(avatarFrame);
 
       // --- Santa Hat on Head ---
