@@ -895,7 +895,7 @@ export default function ChristmasTree3D({
               <div>
                 <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
                   <UserCheck className="w-3.5 h-3.5" />
-                  <span>Nhân vật 3D Mini: {hoveredTarget.participant.name}</span>
+                  <span>Linh vật: {hoveredTarget.participant.name}</span>
                 </div>
                 <div className="text-xs font-medium text-slate-200">
                   {hoveredTarget.participant.hasGiven ? (
