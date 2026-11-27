@@ -96,6 +96,19 @@ export const INITIAL_TREE_ITEMS = [
   { id: 'item-10', code: 'NOEL-MAGIC-10', name: 'Kẹo Gậy Noel Xoắn', type: 'candy_cane', color: '#f43f5e', score: 'Hạnh Phúc' },
   { id: 'item-11', code: 'NOEL-MAGIC-11', name: 'Quả Châu Vàng Ánh Kim', type: 'bauble_gold', color: '#fbbf24', score: 'Tài Lộc' },
   { id: 'item-12', code: 'NOEL-MAGIC-12', name: 'Hộp Quà Ngọc Bích', type: 'gift_green', color: '#059669', score: 'Sức Khỏe' },
+  { id: 'item-13', code: 'NOEL-MAGIC-13', name: 'Ngôi Sao Bạc Lấp Lánh', type: 'star_silver', color: '#e5e7eb', score: 'Thành Công' },
+  { id: 'item-14', code: 'NOEL-MAGIC-14', name: 'Quả Châu Hồng Ngọt Ngào', type: 'bauble_pink', color: '#ec4899', score: 'Yêu Thương' },
+  { id: 'item-15', code: 'NOEL-MAGIC-15', name: 'Hộp Quà Bạc Lấp Lánh', type: 'gift_silver', color: '#9ca3af', score: 'Sáng Tạo' },
+  { id: 'item-16', code: 'NOEL-MAGIC-16', name: 'Kẹo Gậy Xanh Dương', type: 'candy_cane', color: '#3b82f6', score: 'Vui Vẻ' },
+  { id: 'item-17', code: 'NOEL-MAGIC-17', name: 'Quả Châu Cam Rực Rỡ', type: 'bauble_orange', color: '#f97316', score: 'Nhiệt Huyết' },
+  { id: 'item-18', code: 'NOEL-MAGIC-18', name: 'Hộp Quà Tím Sang Trọng', type: 'gift_purple', color: '#8b5cf6', score: 'Quý Phái' },
+  { id: 'item-19', code: 'NOEL-MAGIC-19', name: 'Ngôi Sao Xanh Lấp Lánh', type: 'star_blue', color: '#3b82f6', score: 'Hy Vọng' },
+  { id: 'item-20', code: 'NOEL-MAGIC-20', name: 'Quả Châu Bạc Ánh Kim', type: 'bauble_silver', color: '#d1d5db', score: 'Tinh Tế' },
+  { id: 'item-21', code: 'NOEL-MAGIC-21', name: 'Hộp Quà Đỏ Rực Rỡ', type: 'gift_red', color: '#ef4444', score: 'Nồng Nàn' },
+  { id: 'item-22', code: 'NOEL-MAGIC-22', name: 'Kẹo Gậy Vàng Ngọt Ngào', type: 'candy_cane', color: '#f59e0b', score: 'Ngọt Ngào' },
+  { id: 'item-23', code: 'NOEL-MAGIC-23', name: 'Quả Châu Xanh Dương', type: 'bauble_blue', color: '#3b82f6', score: 'Bình Yên' },
+  { id: 'item-24', code: 'NOEL-MAGIC-24', name: 'Hộp Quà Hồng Ngọt Ngào', type: 'gift_pink', color: '#ec4899', score: 'Dịu Dàng' },
+  { id: 'item-25', code: 'NOEL-MAGIC-25', name: 'Ngôi Sao Vàng Rực Rỡ', type: 'star_gold', color: '#fbbf24', score: 'Sáng Chói' },
 ];
 
 export const AVATAR_PRESETS = [

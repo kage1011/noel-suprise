@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage';
 import GamePage from './pages/GamePage';
 import ManagePage from './pages/ManagePage';
 import HistoryPage from './pages/HistoryPage';
+import NoelCat from './components/NoelCat';
 import { INITIAL_PARTICIPANTS, INITIAL_TREE_ITEMS } from './data/mockData';
 
 const LOCAL_STORAGE_KEY_PARTICIPANTS = 'noel_exchange_participants_v1';
@@ -97,6 +98,9 @@ export default function App() {
 
       {/* Falling Snow Effect */}
       <SnowEffect count={85} />
+
+      {/* Noel Cat running around the edges */}
+      <NoelCat />
 
       {/* Navigation Bar */}
       <Navbar
