@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Sparkles, Users, Gift, RotateCcw, Check, ArrowRight, UserCheck, Shuffle } from 'lucide-react';
 import ChristmasTree3D from '../components/ChristmasTree3D';
 import GiftRevealModal from '../components/GiftRevealModal';
-import CountdownModal from '../components/CountdownModal';
-import { playClickSound, playJingleBells, playSwapSound } from '../utils/audio';
+import { playClickSound, playJingleBells } from '../utils/audio';
 import confetti from 'canvas-confetti';
 
 export default function GamePage({
@@ -19,19 +18,12 @@ export default function GamePage({
   const [candidateReceiver, setCandidateReceiver] = useState(null);
   const [openedItemIds, setOpenedItemIds] = useState([]);
   
-  // Modal states: 'none' | 'reveal' | 'countdown'
-  const [modalState, setModalState] = useState('none');
+  // Modal state: boolean whether to show reveal modal
+  const [isRevealOpen, setIsRevealOpen] = useState(false);
 
   // Filter participants
   const ungivenParticipants = participants.filter((p) => !p.hasGiven);
   const unreceivedParticipants = participants.filter((p) => !p.hasReceived);
-  const alreadyExchangedPairs = participants
-    .filter((p) => p.hasGiven && p.givenTo)
-    .map((p) => ({
-      giver: p,
-      receiver: p.givenTo,
-      giftName: p.gift,
-    }));
 
   // Handle player selecting their avatar
   const handleSelectGiver = (participant) => {
@@ -72,16 +64,11 @@ export default function GamePage({
     setSelectedTreeItem(item);
     setCandidateReceiver(chosenReceiver);
     setOpenedItemIds((prev) => [...prev, item.id]);
-    setModalState('reveal');
+    setIsRevealOpen(true);
   };
 
-  // Proceed from Reveal to 30s Countdown
-  const handleProceedToCountdown = () => {
-    setModalState('countdown');
-  };
-
-  // Confirm match (either keep original receiver or swapped receiver)
-  const handleFinalizeMatch = (finalReceiver, wasSwapped = false) => {
+  // Confirm match: finalize the gift directly
+  const handleFinalizeMatch = (finalReceiver) => {
     if (!selectedGiver || !finalReceiver) return;
 
     // Trigger celebration confetti
@@ -126,19 +113,13 @@ export default function GamePage({
       itemId: selectedTreeItem?.id,
       itemCode: selectedTreeItem?.code,
       itemName: selectedTreeItem?.name,
-      wasSwapped,
     });
 
     // Reset selection for next turn
-    setModalState('none');
+    setIsRevealOpen(false);
     setSelectedGiver(null);
     setSelectedTreeItem(null);
     setCandidateReceiver(null);
-  };
-
-  // Handle swap action from 30s countdown
-  const handleSwapMatch = (newTargetReceiver) => {
-    handleFinalizeMatch(newTargetReceiver, true);
   };
 
   // Game is finished when everyone has given
@@ -320,26 +301,13 @@ export default function GamePage({
         />
       </div>
 
-      {/* POPUP MODAL: STEP 3 (GIFT REVEAL) */}
-      {modalState === 'reveal' && (
+      {/* POPUP MODAL: GIFT REVEAL & DIRECT CONFIRMATION */}
+      {isRevealOpen && (
         <GiftRevealModal
           giver={selectedGiver}
           receiver={candidateReceiver}
           item={selectedTreeItem}
-          onProceedToCountdown={handleProceedToCountdown}
-        />
-      )}
-
-      {/* POPUP MODAL: STEP 4 (30-SECOND COUNTDOWN & SWAP) */}
-      {modalState === 'countdown' && (
-        <CountdownModal
-          giver={selectedGiver}
-          receiver={candidateReceiver}
-          item={selectedTreeItem}
-          availableReceivers={unreceivedParticipants}
-          alreadyExchangedPairs={alreadyExchangedPairs}
-          onConfirmMatch={(rec) => handleFinalizeMatch(rec, false)}
-          onSwapMatch={handleSwapMatch}
+          onConfirmGift={() => handleFinalizeMatch(candidateReceiver)}
         />
       )}
 

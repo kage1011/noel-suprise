@@ -75,7 +75,7 @@ export default function Navbar({ activeTab, onSelectTab, participants = [], hist
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>Quản Lý & Excel</span>
+            <span>Người tham gia</span>
           </button>
 
           <button

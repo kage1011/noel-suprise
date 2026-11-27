@@ -19,7 +19,7 @@ export default {
       },
       fontFamily: {
         christmas: ['"Mountains of Christmas"', 'cursive', 'sans-serif'],
-        display: ['"Cinzel Decorative"', 'serif', 'sans-serif'],
+        // display: ['"Cinzel Decorative"', 'serif', 'sans-serif'],
         sans: ['"Quicksand"', 'sans-serif']
       },
       animation: {

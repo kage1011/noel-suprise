@@ -1,13 +1,13 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Sparkles, Gift, ArrowRight, Heart, Star, Clock } from 'lucide-react';
+import { Sparkles, Gift, Heart, Star, CheckCircle } from 'lucide-react';
 import { playGiftRevealSound, playJingleBells } from '../utils/audio';
 
 export default function GiftRevealModal({
   giver,
   receiver,
   item,
-  onProceedToCountdown,
+  onConfirmGift,
 }) {
   useEffect(() => {
     // Play celebratory sound
@@ -119,20 +119,19 @@ export default function GiftRevealModal({
           </div>
         </div>
 
-        {/* CTA to Countdown Window */}
+        {/* CTA to Confirm Match directly */}
         <div className="mt-8 flex flex-col items-center justify-center">
           <button
             type="button"
-            onClick={onProceedToCountdown}
-            className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-red-600 to-amber-500 hover:from-amber-400 hover:to-red-500 text-white text-base font-black uppercase tracking-wider shadow-[0_0_30px_rgba(239,68,68,0.6)] flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95"
+            onClick={onConfirmGift}
+            className="w-full sm:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-green-600 to-amber-500 hover:from-emerald-500 hover:to-amber-400 text-white text-base font-black uppercase tracking-wider shadow-[0_0_30px_rgba(16,185,129,0.5)] flex items-center justify-center gap-3 transition-all hover:scale-105 active:scale-95"
           >
-            <Clock className="w-5 h-5 text-amber-200 animate-spin" style={{ animationDuration: '4s' }} />
-            <span>Kích Hoạt 30 Giây Kịch Tính Đổi Quà!</span>
-            <ArrowRight className="w-5 h-5" />
+            <CheckCircle className="w-5 h-5 text-white" />
+            <span>Xác Nhận & Hoàn Tất Trao Quà 🎉</span>
           </button>
           
-          <span className="text-xs text-slate-400 mt-2">
-            ⏱️ Người chơi sẽ có 30 giây để quyết định giữ nguyên quà hoặc đổi với người khác!
+          <span className="text-xs text-slate-300 mt-3 font-medium">
+            🎁 Món quà chính thức thuộc về <strong className="text-emerald-300">{receiver?.name}</strong>! Chúc mừng hai bạn!
           </span>
         </div>
 

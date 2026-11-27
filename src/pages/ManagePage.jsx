@@ -181,7 +181,7 @@ export default function ManagePage({
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black text-white font-display flex items-center gap-2">
-            <span>📋 QUẢN LÝ NGƯỜI ĐỔI QUÀ (EXCEL)</span>
+            <span>📋 QUẢN LÝ NGƯỜI ĐỔI QUÀ</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 mt-1">
             Quản lý các cột: <strong>ID, Tên, Món quà của người đó, Hình ảnh của người đó</strong>

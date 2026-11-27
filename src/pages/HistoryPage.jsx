@@ -102,19 +102,12 @@ export default function HistoryPage({ history = [], participants = [], onStartGa
                 </div>
               </div>
 
-              {/* Swap Status */}
+              {/* Status */}
               <div className="w-full md:w-auto flex justify-end">
-                {record.wasSwapped ? (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-950/80 border border-amber-400/40 text-amber-300">
-                    <Shuffle className="w-3.5 h-3.5" />
-                    <span>Đã Đổi Quà 30s</span>
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-950/80 border border-emerald-500/40 text-emerald-300">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Giữ Nguyên</span>
-                  </span>
-                )}
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-950/80 border border-emerald-500/40 text-emerald-300">
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Đã Trao Thành Công</span>
+                </span>
               </div>
             </div>
           ))}

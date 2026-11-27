@@ -157,7 +157,7 @@ export function exportResultsToExcel(participants, history = []) {
       'Món quà trao đi': h.giftName,
       'Mã quả châu/hộp quà': h.itemCode || '',
       'Người nhận': h.receiverName,
-      'Có đổi quà 30s': h.wasSwapped ? 'Có đổi quà' : 'Giữ nguyên',
+      'Trạng thái': 'Đã trao quà trực tiếp',
     }));
     const historySheet = XLSX.utils.json_to_sheet(historyRows);
     XLSX.utils.book_append_sheet(workbook, historySheet, 'Lich_Su_Tung_Luot');

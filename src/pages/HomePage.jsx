@@ -26,8 +26,7 @@ export default function HomePage({ onStartGame, onGoManage, participants = [] })
 
         <p className="mt-6 text-base sm:text-lg text-slate-300 font-medium leading-relaxed max-w-2xl mx-auto">
           Cùng mở những quả châu lung linh, hộp quà bất ngờ trên cây thông tuyết 3D. 
-          Gửi gắm tình cảm ấm áp cho đồng đội với cơ chế đổi quà ngẫu nhiên và vòng 
-          <strong className="text-amber-400 font-bold"> 30 giây kịch tính</strong>!
+          Gửi gắm tình cảm ấm áp cho đồng đội với cơ chế mở quà ngẫu nhiên đầy bất ngờ, ấm áp và trọn vẹn niềm vui!
         </p>
 
         {/* Hero CTA Buttons */}
@@ -48,7 +47,7 @@ export default function HomePage({ onStartGame, onGoManage, participants = [] })
             className="w-full sm:w-auto px-6 py-4 rounded-2xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white font-bold text-sm border border-white/20 hover:border-amber-400/60 shadow-lg flex items-center justify-center gap-2.5 transition-all hover:scale-105"
           >
             <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
-            <span>Quản Lý Danh Sách & Excel</span>
+            <span>Danh Sách Người Tham Gia</span>
           </button>
         </div>
 
@@ -129,11 +128,11 @@ export default function HomePage({ onStartGame, onGoManage, participants = [] })
               4
             </div>
             <h3 className="text-base font-bold text-white mb-2 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-purple-400" />
-              <span>30 Giây Đổi Quà Kịch Tính</span>
+              <Heart className="w-4 h-4 text-purple-400" />
+              <span>Trao Quà & Gửi Lời Chúc</span>
             </h3>
             <p className="text-xs text-slate-300 leading-relaxed">
-              Đồng hồ đếm ngược 30 giây! Bạn có quyền giữ nguyên trao cho người đó hoặc đổi/cướp quà với người khác!
+              Món quà lập tức thuộc về người may mắn được gọi tên. Cả hai cùng trao quà trực tiếp và gửi trao những lời chúc Noel an lành!
             </p>
           </div>
         </div>
